@@ -9,14 +9,14 @@
 #include <list>
 #include <map>
 
-std::istream& read_internal( std::istream& istream, char* p, std::size_t size )
+inline std::istream& read_internal( std::istream& istream, char* p, std::size_t size )
 {
     return istream.read( p, size );
 }
 
 /** deserialization of POD types */
 template<typename T>
-std::istream& extract( std::istream& istream, T& t, typename enable_if< !is_base_of<ISerializable, T>::value >::type* = 0 )
+std::istream& extract( std::istream& istream, T& t, typename Meta::enable_if< !Meta::is_base_of<ISerializable, T>::value >::type* = 0 )
 {
     return read_internal( istream, (char*)&t, sizeof(t) );
 }
@@ -30,21 +30,22 @@ std::istream& extract( std::istream& istream, T*& t )
 }
 
 template<class T>
-std::istream& extract( std::istream& istream, T& t, typename enable_if< is_base_of<ISerializable, T>::value >::type* = 0 )
+std::istream& extract( std::istream& istream, T& t, typename Meta::enable_if< Meta::is_base_of<ISerializable, T>::value >::type* = 0 )
 {
     return t.extract( istream );
 }
 
 /** deserialization of std::string */
-std::istream& extract( std::istream& istream, std::string& str )
+template<class T>
+inline std::istream& extract( std::istream& istream, std::basic_string<T>& str )
 {
     std::size_t size = 0;
     extract( istream, size );
     
-    std::vector<char> strContent( size, '\0');
-    read_internal( istream, &strContent[0], size );
+    std::vector<T> strContent( size, '\0');
+    read_internal( istream, (char*)&strContent[0], size*sizeof(T) );
     
-    str = std::string( strContent.begin(), strContent.end() );
+    str = std::basic_string<T>( strContent.begin(), strContent.end() );
     return istream;
 }
 
@@ -66,7 +67,7 @@ std::istream& extract( std::istream& istream, std::pair< K, V >& pair )
 template< typename STLContainer>
 std::istream& extractContainer( std::istream& istream, STLContainer& c )
 {
-    std::size_t size = 0;
+    std::size_t size = 0;    
     extract( istream, size );
 
     std::vector<typename STLContainer::value_type > tempVector;

@@ -9,7 +9,7 @@
 #include <list>
 #include <map>
 
-std::ostream& write_internal(std::ostream &ostream, const char *p, std::size_t size)
+inline std::ostream& write_internal(std::ostream &ostream, const char *p, std::size_t size)
 {
     ostream.write ( p, size );
     return ostream;
@@ -17,7 +17,7 @@ std::ostream& write_internal(std::ostream &ostream, const char *p, std::size_t s
 
 /** serialization of POD types */
 template<typename T>
-std::ostream& insert( std::ostream& ostream, const T& t, typename enable_if<!is_base_of<ISerializable, T>::value >::type* = 0 )
+std::ostream& insert( std::ostream& ostream, const T& t, typename Meta::enable_if<!Meta::is_base_of<ISerializable, T>::value >::type* = 0 )
 {
     return write_internal( ostream, (const char*)&t, sizeof(t) );
 }
@@ -30,17 +30,18 @@ std::ostream& insert( std::ostream& ostream, T* serializable )
 }
 
 template<class T>
-std::ostream& insert( std::ostream& ostream, const T& t, typename enable_if<is_base_of<ISerializable, T>::value >::type* = 0 )
+std::ostream& insert( std::ostream& ostream, const T& t, typename Meta::enable_if<Meta::is_base_of<ISerializable, T>::value >::type* = 0 )
 {
     return t.insert( ostream );
 }
 
 /** serialization of std::string */
-std::ostream& insert( std::ostream& ostream, const std::string& str )
+template<typename T>
+inline std::ostream& insert( std::ostream& ostream, const std::basic_string<T>& str )
 {
     std::size_t size = str.size();
     insert( ostream, size );
-    write_internal( ostream, str.c_str(), size );
+    write_internal( ostream, (const char*)str.c_str(), size*sizeof(T) );
     return ostream;
 }
 
